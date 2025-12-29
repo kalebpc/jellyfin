@@ -1,6 +1,6 @@
 <#
     
-    Temp script for getting imdb ids and renaming folders.
+    Temp script for getting imdb ids and outputting those names to a txt file.
 
     # Handle Apikey from file.
     $fileContent = Get-Content -Path ".env" | Where { $_ -imatch "omdbapikey" }
@@ -71,3 +71,4 @@ If ( $Outfile -ine "" ) {
 "Errors            : '{0}'" -f $result.Errors.Count
 
 return $result
+
