@@ -10,9 +10,17 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, HelpMessage = "List of 'DirectoryInfo' objects.")]
-    [System.IO.DirectoryInfo[]]$Folders
+    [Parameter(Mandatory = $true, Position = 0, ValueFromPipelineByPropertyName = $true, HelpMessage = "List of 'DirectoryInfo' objects.")]
+    [System.IO.DirectoryInfo[]]$Folders,
+    [Switch]$WhatIf
 )
+
+[Int64]$total = $Folders.Count
+
+[Int64]$renamed = 0
+
+[String[]]$skipped = @()
+
 ForEach ( $folder In $Folders ) {
     ForEach ( $file In $(Get-ChildItem -LiteralPath $folder.FullName -Depth 0 -Exclude "*imdbid*") ) {
         $temp = $($folder.Name -replace "\(.*$","").Trim()
@@ -26,9 +34,14 @@ ForEach ( $folder In $Folders ) {
                 } Else {
                     $newname = "{0}{1}" -f $folder.Name, $($file.Name -replace ".*\)","")
                 }
-                # "`nRename-Item`n -LiteralPath`n {0}`n -NewName`n {1}" -f $file.FullName, $newname
-                Rename-Item -LiteralPath $file.FullName -NewName $newname
-            }
+                If ($WhatIf) {
+                    "`nRename-Item`n -LiteralPath`n {0}`n -NewName`n {1}" -f $file.FullName, $newname
+                    $renamed+=1
+                } Else {
+                    Rename-Item -LiteralPath $file.FullName -NewName $newname
+                    $renamed+=1
+                }
+            } Else { $skipped+=$file.FullName }            
         }
         If ($file.PSIsContainer) {
             # Rename subfolder(s) files.
@@ -41,17 +54,22 @@ ForEach ( $folder In $Folders ) {
                     } Else {
                         $newnam = "{0} - {1}" -f $folder.Name, $fil.Name
                     }
-                    # "`nRename-Item`n -LiteralPath`n {0}`n -NewName`n {1}" -f $fil.FullName, $newnam
-                    Rename-Item -LiteralPath $fil.FullName -NewName $newnam
-                }
+                    If ($WhatIf) {
+                        "`nRename-Item`n -LiteralPath`n {0}`n -NewName`n {1}" -f $fil.FullName, $newnam
+                        $renamed+=1
+                    } Else {
+                        Rename-Item -LiteralPath $fil.FullName -NewName $newnam
+                        $renamed+=1
+                    }
+                } Else { $skipped+=$fil.FullName }
             }
         }
     }
-    # # Check for wrong file names.
-    # ForEach ( $file In $(Get-ChildItem -LiteralPath $folder.FullName -Depth 1) ) {
-    #     $temp = $($folder.Name -replace "\(.*$","").Trim()
-    #     If ( $file.Name -inotlike "$temp*" -and $file.PSIsContainer -eq $false ) {
-    #         "Error:`nFolder : {0}`nFile   : {1}" -f $folder.Name, $file.FullName
-    #     }
-    # }
 }
+
+If ( $skipped.Count -gt 0 ) {
+    "`nSkipped :"
+    ForEach ( $x In $skipped ) { "  {0}" -f $x }
+}
+
+"`nTotal   : '{0}'`nRenamed : '{1}'`nSkipped : '{2}'" -f $total, $renamed, $skipped.Count
