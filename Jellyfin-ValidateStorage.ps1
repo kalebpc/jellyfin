@@ -177,11 +177,7 @@ If ($Recurse) {
                 If ($PrintValid) {
                     "Valid Folder Name             : {0}" -f $folderfile.FullName
                 }
-            } ElseIf ( $folderfile.Name -inotin $libraryFolderNames ) {
-                "Invalid Folder Name           : {0}" -f $folderfile.FullName
-            } ElseIf ($PrintValid) {
-                "Valid Folder Name             : {0}" -f $folderfile.FullName
-            }
+            } Else { "Invalid Folder Name           : {0}" -f $folderfile.FullName }
         } ElseIf ( IsValid $folderfile.Name -File ) {
             $temp = Split-Path -Path $folderfile.FullName -Parent | Split-Path -Parent | Split-Path -Leaf
             If ( $temp -iin $libraryFolderNames ) {
