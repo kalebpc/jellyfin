@@ -81,7 +81,7 @@ Param(
 )
 
 If ( ! $(Test-Path -LiteralPath $LiteralPath) ) { "System can not find '{0}'" -f $LiteralPath ; Exit }
-
+If ( Test-Path -LiteralPath $OmitList ) { $OmitList = Get-Content -LiteralPath $OmitList }
 
 [String[]]$libraryFolderNames = @(
     "Movies",
@@ -94,7 +94,8 @@ If ( ! $(Test-Path -LiteralPath $LiteralPath) ) { "System can not find '{0}'" -f
     "Radio",
     "Live TV",
     "Movie Trailers",
-    "Videos and Photos"
+    "Workout Videos",
+    "Images"
 )
 
 [String[]]$librarySubFolderNames = @(
