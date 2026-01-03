@@ -101,7 +101,7 @@ ForEach ( $folder In $Folders ) {
 
                 function Print-MoveFile {
 
-                    "Move-Item`n -LiteralPath`n {0}`n -Destination`n {1}`n -Force" -f $oldfile.FullName, $("{0}\{1}" -f $extrasPath, $oldfile.Name)
+                    "`nWhatIf:`nMove-Item -LiteralPath {0} -Destination {1} -Force`n:WhatIf`n" -f $oldfile.FullName, $("{0}\{1}" -f $extrasPath, $oldfile.Name)
 
                 }
 
@@ -176,10 +176,28 @@ function Print-List {
 If ($PrintWaiting) {
 
     If ( $waiting.Count -gt 0 ) {
+        
+        If ($WhatIf) {
 
-        "`nFiles Waiting :`n"
+            "`nWhatIf:`nFiles Waiting :`n"
+
+        } Else {
+
+            "`nFiles Waiting :`n"
+
+        }
 
         Print-List $waiting
+
+        If ($WhatIf) {
+
+            "`n: Files Waiting`n:WhatIf"
+
+        } Else {
+
+            "`n: Files Waiting`n"
+
+        }
 
     }
 
@@ -189,11 +207,37 @@ If ($PrintMoved) {
 
     If ( $moved.Count -gt 0 ) {
         
-        "`nMoved Files :`n"
+        If ($WhatIf) {
+
+            "`nWhatif:`nMoved Files :`n"
+
+        } Else {
+
+            "`nMoved Files :`n"
+
+        }
 
         Print-List $moved
+
+        If ($WhatIf) {
+
+            "`n: Moved Files`n:Whatif`n"
+
+        } Else {
+
+            "`n: Moved Files`n"
+
+        }
         
     }
 }
 
-"`n`nMoved Files   : {0}`nFiles Waiting : {1}`n" -f $moved.Count, $waiting.Count
+If ($WhatIf) {
+
+    "`n`nWhatIf:`nMoved Files   : {0}`nFiles Waiting : {1}`n:Whatif`n" -f $moved.Count, $waiting.Count
+
+} Else {
+
+    "`n`nMoved Files   : {0}`nFiles Waiting : {1}`n" -f $moved.Count, $waiting.Count
+
+}
