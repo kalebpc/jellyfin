@@ -13,7 +13,7 @@ param(
 
 )
 
-[String]$log = "$Env:LocalAppData\Scripts\Jellyfin\logs\Service-MoveOldFiles.log"
+[String]$log = "$Env:LocalAppData\Scripts\Jellyfin\Services\logs\Service-MoveOldFiles.log"
 
 [String]$temp = $log | Split-Path -Parent
 
