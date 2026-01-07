@@ -9,7 +9,10 @@
 param(
 
     [Parameter(Mandatory = $true, Position = 0, ValueFromPipelineByPropertyName = $true)]
-    [String]$Folder
+    [String]$Folder,
+
+    [Parameter(HelpMessage = "Time in 'minutes'.", Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
+    [Int32]$Time
 
 )
 
@@ -68,7 +71,7 @@ function Run {
 
     Add-Log "Running 'Move-OldFiles.ps1'."
 
-    ./Move-OldFiles $list -newext "webm" -oldext "mp4" -Hours 5 -Printwaiting -Printmoved | Out-FIle -LiteralPath $log -Encoding unicode -Append
+    ./Move-OldFiles $list -newext "webm" -oldext "mp4" -Minutes $Time -Printwaiting -Printmoved | Out-FIle -LiteralPath $log -Encoding unicode -Append
 
     [System.DateTime]$endtime = Get-Date
 
@@ -76,7 +79,4 @@ function Run {
 
 }
 
-# Run every 3 hours.
-$hours = 3
-
-While ($true) { Run ; Start-Sleep -Seconds $($hours*60*60)}
+While ($true) { Run ; Start-Sleep -Seconds $($Time*60)}
