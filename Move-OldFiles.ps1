@@ -54,7 +54,7 @@ ForEach ( $folder In $Folders ) {
 
         )
 
-        return $($S -replace "\..*$",$(".{0}" -f $Oldext))
+        return $($S -replace "(\.\b)(?!.*\1).*$",$(".{0}" -f $Oldext))
 
     }
 
