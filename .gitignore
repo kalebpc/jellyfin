@@ -1,0 +1,6 @@
+*.txt
+*.html
+*.lnk
+old
+.env
+Jellyfin and SSL_files
