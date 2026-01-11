@@ -29,10 +29,12 @@ ForEach ( $folder In $Folders ) {
                 # Rename main folder files.
                 If ( $($file.Name -replace ".*\)","") -imatch "trailer\." ) {
                     $newname = "{0} - {1}" -f $folder.Name, $($file.Name -replace ".*\)","")
-                } ElseIf ( $($file.Name -replace ".*\)","") -match "^\s" ) {
+                } ElseIf ( $($file.Name -replace ".*\)","") -match "^\ " ) {
                     $newname = "{0} -{1}" -f $folder.Name, $($file.Name -replace ".*\)","")
-                } Else {
+                } ElseIf ( $($file.Name -replace "\.\w{5}$"," ") -match "\ " ) {
                     $newname = "{0}{1}" -f $folder.Name, $($file.Name -replace ".*\)","")
+                } Else {
+                    $newname = "{0} - {1}" -f $folder.Name, $($file.Name -replace ".*\)","")
                 }
                 If ($WhatIf) {
                     "`nRename-Item`n -LiteralPath`n {0}`n -NewName`n {1}" -f $file.FullName, $newname
@@ -49,7 +51,7 @@ ForEach ( $folder In $Folders ) {
                 If ( $fil.Name -inotlike "$temp*"  -or $fil.Name -inotmatch "\[imdbid\-") {
                     If ( $fil.Name -match ".*\-" ) {
                         $newnam = "{0} - {1}" -f $folder.Name, $($fil.Name -replace ".*\-","")
-                    } ElseIf ( $($fil.Name -replace ".*\)","") -match "^\s" ) {
+                    } ElseIf ( $($fil.Name -replace ".*\)","") -match "^\ " ) {
                         $newname = "{0} -{1}" -f $folder.Name, $($fil.Name -replace ".*\)","")
                     } Else {
                         $newnam = "{0} - {1}" -f $folder.Name, $fil.Name
