@@ -181,10 +181,9 @@ function IsValid {
     }
     If ($File) {
         $S = Remove-Extension $S -RemoveTrail
-        # Check file against list that includes omitlist
         If ( $S -iin $libraryFileNames ) { return $true }
     } Else {
-        If ( $S -iin $libraryFolderNames -or $S -ilike "season*" -or $S -iin $librarySubFolderNames ) {return $true }
+        If ( $S -iin $libraryFolderNames -or $S -match "Season \d\d" -or $S -iin $librarySubFolderNames ) {return $true }
     }
     return $false
 }
@@ -197,13 +196,15 @@ If ($Recurse) {
                 If ($PrintValidOutput) { 
                     "Valid Folder Name             : {0}" -f $folderfile.FullName
                 }
+            } ElseIf ($folderfile.FullName -match "Radio" ) {
+                If ($PrintValidOutput) { 
+                    "Valid Folder Name             : {0}" -f $folderfile.FullName
+                }
             } Else { "Invalid Folder Name           : {0}" -f $folderfile.FullName }
         } ElseIf ( $($folderfile.FullName | Split-Path -Parent | Split-Path -Leaf) -in $librarySubFolderNames ) {
             If ($PrintValidOutput) {
                 "Valid  File  Name             : {0}" -f $folderfile.FullName
             }
-            # Ignoring name structure of subfolder file names
-            # Break
         } ElseIf ( IsValid $folderfile.Name -File ) {
             # Get file path up to Title Directory
             # Examples in:
@@ -218,7 +219,7 @@ If ($Recurse) {
                 $temp = Split-Path -Path $folderfile.FullName -Parent | Split-Path -Leaf
                 # Out:
                 # 1. $temp = G:\Jellyfin\Movies\Movie Name (2005) [imdbid-tt1234567]
-            } ElseIf ( $folderfile.FullName -imatch "^.*\\Season.*$" -and $(Split-Path -Path $folderfile.FullName -Parent | Split-Path -Leaf) -iin $librarySubFolderNames ) {
+            } ElseIf ( $folderfile.FullName -imatch "^.*\\Season \d\d\\.*$" -and $(Split-Path -Path $folderfile.FullName -Parent | Split-Path -Leaf) -iin $librarySubFolderNames ) {
                 # In  : 1. G:\Jellyfin\Shows\Show Name (TV Series 2005-2013) [imdbid-tt1234567]\Season 2\Episode Name - S02E11.mp4
                 # In  : 2. G:\Jellyfin\Shows\Show Name (TV Series 2005-2013) [imdbid-tt1234567]\Season 2\extras\file.mp4
                 $temp = Split-Path -Path $folderfile.FullName -Parent | Split-Path -Parent | Split-Path -Parent | Split-Path -Leaf
@@ -238,8 +239,12 @@ If ($Recurse) {
                 "Valid  File  Name             : {0}" -f $folderfile.FullName
             }
         } Else {
-            If ($Debugging) { "`n[Debug] File name is structured wrong.  :  ./Jellyfin-ValidateStorage.ps1 -ValidNames    - Run to print accepted structures."}
-            "Invalid File Name             : {0}" -f $folderfile.FullName
+            If ( $folderfile.Name -notmatch "^.*S\d\dE\d\d.*$" -and $folderfile.FullName -notmatch "^.*\\Season \d\d\\.*$" -and $folderfile.FullName -notmatch "^.*\\Radio\\.*$" -and $folderfile.FullName -notmatch "^.*\\Images\\.*$" ) {
+                If ($Debugging) { "`n[Debug] File name is structured wrong.  :  ./Jellyfin-ValidateStorage.ps1 -ValidNames    - Run to print accepted structures."}
+                "Invalid File Name             : {0}" -f $folderfile.FullName
+            } ElseIf ($PrintValidOutput) {
+                "Valid  File  Name             : {0}" -f $folderfile.FullName
+            }
         }
     }
 } Else {
