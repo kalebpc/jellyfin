@@ -44,11 +44,17 @@
 .PARAMETER Recurse
     Recursive file validation.
 
-.PARAMETER PrintValid
+.PARAMETER PrintValidOutput
     Make script print valid file names along with the invalid ones.
 
 .PARAMETER OmitList
     List of names to add to accepted name lists.
+
+.PARAMETER Debugging
+    Print debugging.
+
+.PARAMETER ValidNames
+    Print valid naming structures.
 
 .EXAMPLE
     ./Jellyfin-ValidateStorage.ps1 -LiteralPath 'G:\Jellyfin\' -Recurse
@@ -57,13 +63,13 @@
     ./Jellyfin-ValidateStorage.ps1 -LiteralPath 'G:\Jellyfin\' -Recurse -OmitList "Name","Another Name"
 
 .EXAMPLE
-    ./Jellyfin-ValidateStorage.ps1 -LiteralPath 'G:\Jellyfin\' -PrintValid
+    ./Jellyfin-ValidateStorage.ps1 -LiteralPath 'G:\Jellyfin\' -PrintValidOutput
 
 .EXAMPLE
     "C:\Users\kaleb\Desktop\Jellyfin" | .\Jellyfin-ValidateStorage.ps1 -OmitList $(Get-Content -literalpath "./validnames.txt") -Recurse
 
 .EXAMPLE
-    "C:\Users\kaleb\Desktop\Jellyfin" | .\Jellyfin-ValidateStorage.ps1 -PrintValid
+    "C:\Users\kaleb\Desktop\Jellyfin" | .\Jellyfin-ValidateStorage.ps1 -PrintValidOutput
 
 #> 
 
@@ -75,10 +81,16 @@ Param(
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [Switch]$Recurse,
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [Switch]$PrintValid,
+    [Switch]$PrintValidOutput,
     [Parameter(ValueFromPipelineByPropertyName = $true, Helpmessage = "List of names to add to accepted name lists.")]
-    [String[]]$OmitList
+    [String[]]$OmitList,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Switch]$Debugging,
+    [Parameter(ValueFromPipelineByPropertyName = $true, Helpmessage = "Print list of valid naming structures.")]
+    [Switch]$ValidNames
 )
+
+If ($ValidNames) { "Valid Naming Structures:`n    Movie Name (YEAR).ext`n    Movie Name (TV Movie 2005).ext`n    Show Name (TV Show 2005-2009).ext`n    Show Name (TV Show 2005-).ext`n`n    Movie Name (YEAR) [imdbid-1234567].ext`n    Movie Name (TV Movie 2005) [imdbid-1234567].ext`n    Show Name (TV Show 2005-2009) [imdbid-1234567].ext`n    Show Name (TV Show 2005-) [imdbid-1234567].ext`n" ; Exit }
 
 If ( ! $(Test-Path -LiteralPath $LiteralPath) ) { "System can not find '{0}'" -f $LiteralPath ; Exit }
 If ( $OmitList ) { If ( Test-Path -LiteralPath $OmitList ) { $OmitList = Get-Content -LiteralPath $OmitList } }
@@ -178,25 +190,26 @@ function IsValid {
 }
 
 If ($Recurse) {
-    $folders = Get-ChildItem -LiteralPath $LiteralPath -Recurse
-    ForEach ( $folderfile In $folders ) {
+    ForEach ( $folderfile In $(Get-ChildItem -LiteralPath $LiteralPath -Recurse) ) {
+        # $folderfile # testing
         If ($folderfile.PSIsContainer) {
             If ( IsValid $folderfile.Name ) {
-                If ($PrintValid) { 
+                If ($PrintValidOutput) { 
                     "Valid Folder Name             : {0}" -f $folderfile.FullName
                 }
             } Else { "Invalid Folder Name           : {0}" -f $folderfile.FullName }
         } ElseIf ( $($folderfile.FullName | Split-Path -Parent | Split-Path -Leaf) -in $librarySubFolderNames ) {
-            # Ignoring name structure of subfolder names
-            Break
+            If ($PrintValidOutput) {
+                "Valid  File  Name             : {0}" -f $folderfile.FullName
+            }
+            # Ignoring name structure of subfolder file names
+            # Break
         } ElseIf ( IsValid $folderfile.Name -File ) {
-            # Skip extras files.
-            If ( $($folderfile.FullName | Split-Path -Parent | Split-Path -Leaf) -iin $librarySubFolderNames ) { "break : {0}" -f $folderfile.FullName ; Break }
             # Get file path up to Title Directory
             # Examples in:
             # 1. G:\Jellyfin\Movies\Movie Name (2005) [imdbid-tt1234567]\Movie Name (2005) [imdbid-tt1234567].mkv
             # 2. G:\Jellyfin\Movies\Movie Name (2005) [imdbid-tt1234567]\extras\Movie Name (2005) [imdbid-tt1234567].mkv
-            $temp = $folderfile.FullName | Split-Path -Parent | Split-Path -Parent | Split-Path -Leaf
+            [String]$temp = $folderfile.FullName | Split-Path -Parent | Split-Path -Parent | Split-Path -Leaf
             # Examples out:
             # 1. $temp = G:\Jellyfin\Movies
             # 2. $temp = G:\Jellyfin\Movies\Movie Name (2005) [imdbid-tt1234567]
@@ -217,15 +230,15 @@ If ($Recurse) {
                     # Out : 1. G:\Jellyfin\Shows\Show Name (TV Series 2005-2013) [imdbid-tt1234567]
                 }
             }
-            $temp1 = Remove-Extension $folderfile.Name -RemoveTrail
-            If ( $temp1 -ne $temp -and $(Remove-Extension $folderfile.Name -RemoveTrail) -inotin $libraryFileNames ) {
-                # "`n{0}`n{1}" -f $temp, $temp1
+            [String]$temp1 = Remove-Extension $folderfile.Name -RemoveTrail
+            If ( $temp1 -ne $temp -and $temp1 -notin $libraryFileNames ) {
+                If ($Debugging) { "`n[Debug] temp  : {0}`n[Debug] temp1 : {1}" -f $temp, $temp1 }
                 "WRONG  File  Name             : {0}" -f $folderfile.FullName
-            }
-            If ($PrintValid) {
+            } ElseIf ($PrintValidOutput) {
                 "Valid  File  Name             : {0}" -f $folderfile.FullName
             }
         } Else {
+            If ($Debugging) { "`n[Debug] File name is structured wrong.  :  ./Jellyfin-ValidateStorage.ps1 -ValidNames    - Run to print accepted structures."}
             "Invalid File Name             : {0}" -f $folderfile.FullName
         }
     }
@@ -234,12 +247,12 @@ If ($Recurse) {
     ForEach ( $folderfile In $folders ) {
         If ($folderfile.PSIsContainer) {
             If ( IsValid $folderfile.Name ) {
-                If ($PrintValid) {
+                If ($PrintValidOutput) {
                     "Valid Folder Name             : {0}" -f $folderfile.FullName
                 }
             } ElseIf ( $folderfile.Name -inotin $libraryFolderNames ) {
                 "Invalid Folder Name           : {0}" -f $folderfile.FullName
-            } ElseIf ($PrintValid) {
+            } ElseIf ($PrintValidOutput) {
                 "Valid Folder Name             : {0}" -f $folderfile.FullName
             }
         } ElseIf ( IsValid $folderfile.Name -File ) {
@@ -251,13 +264,14 @@ If ($Recurse) {
             }
             $temp1 = Remove-Extension $folderfile.Name -RemoveTrail
             If ( $temp1 -ne $temp -and $(Remove-Extension $folderfile.Name -RemoveTrail) -inotin $libraryFileNames ) {
-                # "`n{0}`n{1}" -f $temp, $temp1
+                If ($Debugging) { "`n[Debug] temp  : {0}`n[Debug] temp1 : {1}" -f $temp, $temp1 }
                 "WRONG  File  Name             : {0}" -f $folderfile.FullName
             }
-            If ($PrintValid) {
+            If ($PrintValidOutput) {
                 "Valid  File  Name             : {0}" -f $folderfile.FullName
             }
         } Else {
+            If ($Debugging) { "`n[Debug] File name is structured wrong.  :  ./Jellyfin-ValidateStorage.ps1 -ValidNames    - Run to print accepted structures."}
             "Invalid File Name             : {0}" -f $folderfile.FullName
         }
     }
