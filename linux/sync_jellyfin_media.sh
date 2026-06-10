@@ -29,10 +29,9 @@
 ######################################################
 
 logdirpath="$HOME/Logs"
-logfile="$logdirpath/rsync_jellyfin.log"
+logfile="$logdirpath/sync_jellyfin_media.log"
 
-# NOTE: added / at end of localpath to copy contents
-localpath="$HOME/Jellyfin/"
+localpath="$HOME/Jellyfin"
 serverpath="$HOME/Jellyfin"
 
 # ssh host
@@ -47,9 +46,10 @@ ssh="debian"
 # Check if localpath exists.
 ! [ -d "$localpath" ] && { printf "Could not locate localpath: '%s'.\n" $localpath; exit 1; }
 
+# NOTE: added / at end of source to copy contents
 # Sync localpath with serverpath
-rsync -ruPavh $localpath $ssh:$serverpath --log-file=$logfile && rsync -ruPavh $ssh:$serverpath/ $localpath --log-file=$logfile
+
+rsync -ruPavh --delete --backup-dir="/mnt/sata_drive/backup-deleted/$(date "+%Y_%m_%d-(%H-00)")" "$localpath/Music/" "$ssh:$serverpath/Music" --log-file=$logfile && rsync -ruPavh $localpath/ $ssh:$serverpath --log-file=$logfile && rsync -ruPavh $ssh:$serverpath/ $localpath --log-file=$logfile
 
 # Check rsync exit code
 [[ $? -eq 0 ]] && printf "\nSuccess\n"; exit 0 || printf "\nFailed\nexit %d\n" $?
-
